@@ -1,0 +1,825 @@
+<html lang="pt-BR">
+<head>
+    <title>Plugin</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style>
+	table {
+	    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	    border-collapse: collapse;
+	    width: 100%;
+	}
+
+	table td, table th {
+	    border: 1px solid #ddd;
+	    padding: 8px;
+	}
+
+	table tr:nth-child(even){background-color: #f2f2f2;}
+
+	table tr:hover {background-color: #ddd;}
+
+	table th {
+	    padding-top: 12px;
+	    padding-bottom: 12px;
+	    text-align: left;
+	    background-color: #4CAF50;
+	    color: white;
+	}
+
+	#tabelao2 thead,
+    #tabelao2 tbody {
+      display: table;
+      width: 100%;
+    }
+
+    #tabelao2.loading2 tbody {
+        position: relative;
+    }
+
+    #tabelao2.loading2 tbody:after {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.1);
+        background-image: url("../../Content/themes/base/images/ajax-loader.gif");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 50px 50px;
+        content: "";
+    }
+
+    #overlay1 {
+        width: 100%;
+        background-color: rgba(0, 0, 0, 0.3);
+        /*background: url('path/to/opaque/img.png') repeat;*/
+        position: relative;
+    }
+
+    #overlay1 img.loading_circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+    }
+    #res{
+        position:relative;
+    }
+
+    .pagina {
+        padding: 10px;
+        cursor: pointer;
+        text-decoration:none !important;
+        margin: 0 5px;
+        float: left;
+    }
+
+    .pagina:hover {
+        background-color: #4CAF50;
+        color: #FFF;
+        text-decoration:none !important;
+    }
+
+    .pagina-inativa, .pagina-inativa:hover {
+        background: none;
+        cursor:default;
+        color: #000;
+        text-decoration:none !important;
+    }
+
+    .pagina-atual {
+        background-color: #4CAF50;
+        color: #FFF;
+        text-decoration:none !important;
+        cursor: default;
+    }
+	</style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript">
+        //Prot?ipo de plugin
+        (function ($) {
+            var settings;
+
+            $.fn.Tabela = function (options) {
+                var defaults = {
+                    qtdPaginas: 0,
+                    itensPorPagina: 20,
+                    paginaAtual: 0,
+                    limiteExibicaoPagina: 10,
+                    nomeRegistros: "registros",
+                    totalRegistrosPorPagina: 0,
+                    data: null,
+                    colunas: null,
+                    debug: false,
+                    onCreated: null, //evento disparado apenas uma vez ao criar a defini?o da tabela
+                    onPostRender: null //evento que dispara sempre que acabar de renderizar o html da tabela: ao criar o objeto Tabela, utilizar o SetData(data) ou mudar de p?ina 
+                };
+
+                settings = $.extend({}, defaults, options);
+
+                settings.selector = $(this);
+
+                this.Clear = function () {
+                    debug("Clear");
+                    settings.qtdPaginas = 0;
+                    settings.paginaAtual = 0;
+                    settings.totalRegistrosPorPagina = 0;
+                    settings.data = null;
+
+                    render(this, false);
+
+                    return this;
+                };
+
+                this.SetData = function (data) {
+                    debug("SetData");
+                    settings.data = data;
+                    settings.paginaAtual = 0;
+
+                    render(this, false);
+
+                    return this;
+                }
+
+                this.GetData = function () {
+                    debug("GetData");
+                    return settings.data;
+                }
+
+                this.RefreshData = function (i, data) {
+                    debug("RefreshData");
+
+                    settings.data[i] = data;
+
+                    return this;
+                }
+
+                this.GetPaginaAtual = function () {
+                    return settings.paginaAtual;
+                }
+
+                render(this, true);
+
+                if (settings.onCreated)
+                    settings.onCreated(this);
+
+                return this;
+            };
+
+            function debug(msg) {
+                if (settings != null && settings.debug) {
+                    if (window.console && window.console.log) {
+                        window.console.log(msg);
+                    }
+                }
+            };
+
+            function render(obj, full) {
+                debug("render");
+                var t0 = performance.now();
+
+                if (settings.data != null) {
+                    settings.qtdPaginas = Math.ceil(settings.data.length / settings.itensPorPagina);
+                }
+
+                //full - true regera a tabela
+                //full - false regera somente o tbody e p?inas
+                if (full) {
+                    $(obj).append("<div class='register-per-page break' style='margin-top: 10px'></div>");
+
+                    construirTabela(obj);
+
+                    construirPaginas(obj);
+                } else {
+                    var stringTbody = construirTbody(obj);
+                    $(obj).find("tbody").empty().append(stringTbody);
+
+                    montarNumeracaoPaginas(obj);
+                }
+
+                if (settings.onPostRender) {
+                    settings.onPostRender();
+                }
+
+                var t1 = performance.now();
+
+                debug("Executando em " + (t1 - t0) + " milisegundos");
+
+            }
+
+            function construirTabela(obj) {
+                debug("construirTabela");
+                var nome = $(obj).prop("id");
+
+                var stringHtml = "";
+
+                stringHtml += "<table id='" + nome + "_table'>";
+
+                stringHtml += "<thead>";
+
+                stringHtml += construirThead(obj);
+
+                stringHtml += "</thead>";
+
+                stringHtml += "<tbody>";
+
+                stringHtml += construirTbody(obj);
+
+                stringHtml += "</tbody>";
+
+                stringHtml += "</table>";
+
+                $(obj).append(stringHtml);
+            }
+
+            function construirThead(obj) {
+                debug("construirThead");
+
+                var nome = $(obj).prop("id");
+
+                var stringHtml = "";
+
+                stringHtml += "<tr>";
+
+                for (var i = 0; i < settings.colunas.length; i++) {
+
+                	if (!settings.colunas[i].headerStyle)
+                		settings.colunas[i].headerStyle = "";
+
+                    stringHtml += "<th id='" + nome + "_th_" + i + "' style='" +settings.colunas[i].headerStyle +"'>";
+
+                    if (typeof settings.colunas[i].header === "function") {
+                        stringHtml += settings.colunas[i].header();
+                    } else {
+                        stringHtml += settings.colunas[i].header;
+                    }
+
+                    stringHtml += "</th>";
+                }
+
+                stringHtml += "</tr>";
+
+                return stringHtml;
+            }
+
+            function construirTbody(obj) {
+                var nome = $(obj).prop("id");
+
+                var stringHtml = "";
+
+                if (settings.data != null) {
+
+                    var inicioPagina = settings.paginaAtual * settings.itensPorPagina;
+                    var dataSourcePaginado = settings.data.slice(inicioPagina, inicioPagina + settings.itensPorPagina);
+                    settings.totalRegistrosPorPagina = dataSourcePaginado.length;
+
+                    for (var i = 0; i < dataSourcePaginado.length; i++) {
+
+                        stringHtml += "<tr id='" + nome + "_tr_" + (i + inicioPagina) + "'>";
+
+                        stringHtml += montaTd(i + inicioPagina, dataSourcePaginado[i]);
+
+                        stringHtml += "</tr>";
+                    }
+                }
+
+                return stringHtml;
+            }
+
+            function montaTd(i, data) {
+                debug("montaTd");
+                var html = "";
+
+                for (var j = 0; j < settings.colunas.length; j++) {
+                    var valor = data[settings.colunas[j].data];
+
+                    if (!settings.colunas[j].rowStyle)
+                		settings.colunas[j].rowStyle = "";
+
+                    if (settings.colunas[j].render) {
+                        valor = settings.colunas[j].render(i, data);
+                    }
+
+                    html += "<td style='" + settings.colunas[j].rowStyle + "'";
+
+                    if (settings.colunas[j].title) {
+                        html += " title='" + data[settings.colunas[j].data] + "'>";
+                    } else {
+                        html += ">";
+                    }
+
+                    if (valor == null)
+                        valor = "";
+
+                    html += valor + "</td>";
+                }
+
+                return html;
+            }
+
+            function construirPaginas(obj) {
+                debug("construirPaginas");
+
+                $(obj).append("<div class='paginacao'></div>");
+
+                montarNumeracaoPaginas(obj);
+            }
+
+            function construirEventosPagina(obj) {
+                debug("construirEventosPagina");
+                $(obj).find(".pagina").off("click");
+                $(obj).find(".pagina:not(.pagina-anterior, .pagina-proxima, .pagina-atual)").click(function (e) {
+                	e.stopPropagation();
+                    irParaPagina(obj, $(this).data("pagina"));
+                });
+
+                $(obj).find(".pagina-anterior").click(function (e) {
+                	e.stopPropagation();
+                    paginaAnterior(obj, $(this).data("pagina"));
+                });
+
+                $(obj).find(".pagina-proxima").click(function (e) {
+                	e.stopPropagation();
+                    proximaPagina(obj, $(this).data("pagina"));
+                });
+            }
+
+            function montarNumeracaoPaginas(obj) {
+                var stringHtml = "";
+
+                var paginaInativa = "";
+
+                if (settings.paginaAtual == 0)
+                    paginaInativa = "pagina-inativa";
+
+                stringHtml += "<a class='pagina pagina-anterior " + paginaInativa + "'>Anterior</a>";
+
+                var de = 0;
+                var ate = settings.qtdPaginas;
+
+                if (settings.qtdPaginas > settings.limiteExibicaoPagina) {
+                    de = settings.paginaAtual - Math.ceil(settings.limiteExibicaoPagina / 2);
+                    if (de < 0)
+                        de = 0;
+
+                    ate = de + settings.limiteExibicaoPagina;
+
+                    if (ate > settings.qtdPaginas)
+                        ate = settings.qtdPaginas;
+                }
+
+                for (var i = de; i < ate; i++) {
+                    var paginaAtual = "";
+                    if (settings.paginaAtual == i)
+                        paginaAtual = "pagina-atual";
+
+                    stringHtml += "<a class='pagina " + paginaAtual + "' data-pagina='" + i + "'>" + (i + 1) + "</a>";
+                }
+
+                paginaInativa = "";
+                if (settings.paginaAtual + 1 >= settings.qtdPaginas)
+                    paginaInativa = "pagina-inativa";
+
+                stringHtml += "<a class='pagina pagina-proxima " + paginaInativa + "'>Próxima</a>";
+
+                $(obj).find(".paginacao").empty().append(stringHtml);
+
+                construirEventosPagina(obj);
+                atualizarIndicacaoPagina(obj);
+            }
+
+            function atualizarIndicacaoPagina(obj) {
+                var total = 0;
+
+                if (settings.data != null)
+                    total = settings.data.length;
+
+                var de = (settings.paginaAtual * settings.itensPorPagina) + 1;
+                if (total == 0)
+                    de = 0;
+
+                var ate = settings.totalRegistrosPorPagina + de - 1;
+                if (ate < 0)
+                    ate = 0;
+
+                $(obj).find(".register-per-page").html("Exibindo " + de.toString() + " até " + ate.toString() + " de " + total.toString() + " " + settings.nomeRegistros);
+            }
+
+            function proximaPagina(obj) {
+                debug("proximaPagina");
+                var pagina = settings.paginaAtual + 1;
+
+                if (pagina < settings.qtdPaginas)
+                    irParaPagina(obj, pagina);
+            }
+
+            function paginaAnterior(obj) {
+                debug("paginaAnterior");
+                var pagina = settings.paginaAtual - 1;
+
+                if (pagina >= 0)
+                    irParaPagina(obj, pagina);
+            }
+
+            function irParaPagina(obj, pagina) {
+                debug("irParaPagina");
+                settings.paginaAtual = pagina;
+                //construirTabela(settings.selector);
+                render(obj, false);
+            }
+
+            function sortByKey(array, key) {
+			    return array.sort(function(a, b) {
+			        var x = a[key]; var y = b[key];
+			        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+			    });
+			}
+
+        })(jQuery);
+
+        $(document).ready(function () {
+            load();
+        });
+
+        function sortByKey(array, key) {
+		    return array.sort(function(a, b) {
+		        var x = a[key]; var y = b[key];
+		        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+		    });
+		}
+
+        var tabela
+        function load() {
+            var doc = $(document);
+
+            //$('#res').append('<div id="overlay1"><img src="../../Content/themes/base/images/ajax-loader.gif" class="loading_circle" alt="loading" /></div>');
+
+            tabela = $("#tabela").Tabela({
+        		// debug: true,
+        		// itensPorPagina: 1,
+                nomeRegistros: "Poço(s)",
+                colunas: [
+                    {
+                        header: "Poço Nome BR(Nome ANP)",
+                        data: "NomePoco",
+                        dataType: "string",
+                        order: true
+                    },
+                    {
+                        header: "Útimo Status Enviado",
+                        data: "UltimoStatusEnviado",
+                        dataType: "string",
+                        order: true
+                    },
+                    {
+                        header: "Data de Envio do útimo Status",
+                        data: "DataUltimoStatusEnviado",
+                        dataType: "date",
+                        render: function (i, data) {
+                            //Exibindo somente a parte da data
+                            if (data.DataUltimoStatusEnviado == null)
+                                return null;
+
+                            if (data.DataUltimoStatusEnviado.length < 10) {
+                                return data.DataUltimoStatusEnviado;
+                            }
+
+                            return data.DataUltimoStatusEnviado.slice(0, 10);
+                        },
+                        order: true,
+                        title: true
+                    },
+                    {
+                        header: "Status Atual",
+                        data: "StatusPoco",
+                        dataType: "string",
+                        order: true
+                    },
+                    {
+                        header: "Data do Status Atual",
+                        data: "DataAlteracao",
+                        dataType: "date",
+                        render: function (i, data) {
+                            //Exibindo somente a parte da data
+                            if (data.DataAlteracao == null)
+                                return null;
+
+                            if (data.DataAlteracao.length < 10) {
+                                return data.DataAlteracao;
+                            }
+
+                            return data.DataAlteracao.slice(0, 10);
+                        },
+                        order: true,
+                        title: true
+                    },
+                    {
+                        header: "Observação",
+                        data: "Comentario",
+                        dataType: "string",
+                        order: true
+                    },
+                    {
+                        header: function () {
+                            return "<input id='SelecionarTodos' type='checkbox' /><label for='SelecionarTodos'>&nbsp</label>";
+                        },
+                        data: "Selecionado",
+                        dataType: "custom",
+                        render: function (i, data) {
+                            //Cria o checkbox customizado na linha
+                            var criarChecked = "";
+
+                            if (data.Selecionado)
+                                criarChecked = "checked";
+
+                            return "<input id='poco_" + i + "' class='StatusPocoSelecionado' data-index='" + i + "' val='" + i + "' type='checkbox' " + criarChecked + "/><label for='poco_" + i + "'>&nbsp</label>";
+                        },
+                        order: false,
+                        headerStyle: "text-align:center;display:block;",
+                        rowStyle: "text-align:center;"
+                    },
+                ],
+                onCreated: function () {
+                    //Evento do checkbox customizado
+                    $("#tabela").on("change", ".StatusPocoSelecionado", function () {
+                        var index = $(this).data("index");
+
+                        var data = tabela.GetData()[index];
+
+                        data.Selecionado = $(this).prop("checked");
+
+                        tabela.RefreshData(index, data);
+
+                        //var todosChecked = $(this).prop("checked");
+
+                        //$.each(ResultadoStatusPoco.bDataSource, function (i, item) {
+                        //    if (item.Selecionado != todosChecked) {
+                        //        $("#SelecionarTodos").prop("checked", !todosChecked);
+                        //        return;
+                        //    }
+                        //});
+                    });
+                }
+            });
+
+			// {
+			// 	NomePoco: '',
+			// 	UltimoStatusEnviado: '',
+			// 	DataUltimoStatusEnviado: '',
+			// 	StatusPoco: '',
+			// 	DataAlteracao: '',
+			// 	Comentario: '',
+			// 	Selecionado: false
+			// }
+			var resultado = [
+				{
+					NomePoco: 'TESTE 1',
+					UltimoStatusEnviado: null,
+					DataUltimoStatusEnviado: null,
+					StatusPoco: 'ALE',
+					DataAlteracao: '20/10/2017 12:00:00',
+					Comentario: 'Lorem Ipsum',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 2',
+					UltimoStatusEnviado: null,
+					DataUltimoStatusEnviado: null,
+					StatusPoco: 'PRD',
+					DataAlteracao: '05/04/2017 14:35:00',
+					Comentario: 'Lorem Ipsum dolor sit amet',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 3',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 4',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 5',
+					UltimoStatusEnviado: 'AAA',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 6',
+					UltimoStatusEnviado: 'BBB',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 7',
+					UltimoStatusEnviado: 'CCC',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZZZ',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 8',
+					UltimoStatusEnviado: null,
+					DataUltimoStatusEnviado: null,
+					StatusPoco: 'AAA',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 9',
+					UltimoStatusEnviado: null,
+					DataUltimoStatusEnviado: null,
+					StatusPoco: 'SSS',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 10',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 11',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 12',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 13',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 14',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 15',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 16',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 17',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 18',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 19',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 20',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 21',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 22',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+				{
+					NomePoco: 'TESTE 23',
+					UltimoStatusEnviado: 'END',
+					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+					StatusPoco: 'ZEL',
+					DataAlteracao: '22/03/2017 21:15:10',
+					Comentario: 'Lorem Ipsum dolor sit amet 2',
+					Selecionado: false
+				},
+			];
+
+			tabela.SetData(resultado);
+
+            //if (data.sucesso) {
+            //    tabela.SetData(data.result);
+            //    $("#resultados").show();
+            //} else {
+            //    tabela.Clear();
+            //    $("#resultados").hide();
+            //    alert(data.result);
+            //}
+            
+            doc.on("change", "#SelecionarTodos", null, SelecionarTodos_Change);
+            $("#SelecionarTodos").prop("checked", false); //For? vir desmarcado
+        }
+        
+        function SelecionarTodos_Change() {
+            var checked = $(this).prop("checked");
+
+            var data = tabela.GetData();
+            $.each(data, function (i, item) {
+                item.Selecionado = checked;
+            });
+
+            //Atualiza o html das checkbox
+            tabela.SetData(data);
+        }
+
+        function StatusPocoSelecionado_Change() {
+
+        }
+    </script>
+</head>
+<body>
+    <h1>Plugin</h1>
+    <div style="width: 100%">
+        <div id="tabela">
+
+        </div>
+    </div>
+</body>
+
+</html>
