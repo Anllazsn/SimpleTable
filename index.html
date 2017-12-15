@@ -3,30 +3,30 @@
     <title>Plugin</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <style>
-	table {
-	    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-	    border-collapse: collapse;
-	    width: 100%;
-	}
+    table {
+        font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
 
-	table td, table th {
-	    border: 1px solid #ddd;
-	    padding: 8px;
-	}
+    table td, table th {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
 
-	table tr:nth-child(even){background-color: #f2f2f2;}
+    table tr:nth-child(even){background-color: #f2f2f2;}
 
-	table tr:hover {background-color: #ddd;}
+    table tr:hover {background-color: #ddd;}
 
-	table th {
-	    padding-top: 12px;
-	    padding-bottom: 12px;
-	    text-align: left;
-	    background-color: #4CAF50;
-	    color: white;
-	}
+    table th {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        text-align: left;
+        background-color: #4CAF50;
+        color: white;
+    }
 
-	#tabelao2 thead,
+    #tabelao2 thead,
     #tabelao2 tbody {
       display: table;
       width: 100%;
@@ -93,10 +93,10 @@
         text-decoration:none !important;
         cursor: default;
     }
-	</style>
+    </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script type="text/javascript">
-        //Prot?ipo de plugin
+        //Protóipo de plugin
         (function ($) {
             var settings;
 
@@ -158,6 +158,19 @@
                     return settings.paginaAtual;
                 }
 
+                for (var i = 0; i < settings.colunas.length; i++) {
+                    var styleDefault = {
+                        header: '',
+                        row: '',
+                        cell: ''
+                    };
+
+                    $.extend(styleDefault, settings.colunas[i].style);
+                    settings.colunas[i].style = styleDefault;
+                }
+
+                console.log(settings.colunas);
+
                 render(this, true);
 
                 if (settings.onCreated)
@@ -204,7 +217,6 @@
                 var t1 = performance.now();
 
                 debug("Executando em " + (t1 - t0) + " milisegundos");
-
             }
 
             function construirTabela(obj) {
@@ -243,10 +255,7 @@
 
                 for (var i = 0; i < settings.colunas.length; i++) {
 
-                	if (!settings.colunas[i].headerStyle)
-                		settings.colunas[i].headerStyle = "";
-
-                    stringHtml += "<th id='" + nome + "_th_" + i + "' style='" +settings.colunas[i].headerStyle +"'>";
+                    stringHtml += "<th id='" + nome + "_th_" + i + "' style='" + settings.colunas[i].style.header +"'>";
 
                     if (typeof settings.colunas[i].header === "function") {
                         stringHtml += settings.colunas[i].header();
@@ -275,7 +284,7 @@
 
                     for (var i = 0; i < dataSourcePaginado.length; i++) {
 
-                        stringHtml += "<tr id='" + nome + "_tr_" + (i + inicioPagina) + "'>";
+                        stringHtml += "<tr id='" + nome + "_tr_" + (i + inicioPagina) + "' style='"  + "'>";
 
                         stringHtml += montaTd(i + inicioPagina, dataSourcePaginado[i]);
 
@@ -293,14 +302,11 @@
                 for (var j = 0; j < settings.colunas.length; j++) {
                     var valor = data[settings.colunas[j].data];
 
-                    if (!settings.colunas[j].rowStyle)
-                		settings.colunas[j].rowStyle = "";
-
                     if (settings.colunas[j].render) {
                         valor = settings.colunas[j].render(i, data);
                     }
 
-                    html += "<td style='" + settings.colunas[j].rowStyle + "'";
+                    html += "<td style='" + settings.colunas[j].style.cell + "'";
 
                     if (settings.colunas[j].title) {
                         html += " title='" + data[settings.colunas[j].data] + "'>";
@@ -329,17 +335,17 @@
                 debug("construirEventosPagina");
                 $(obj).find(".pagina").off("click");
                 $(obj).find(".pagina:not(.pagina-anterior, .pagina-proxima, .pagina-atual)").click(function (e) {
-                	e.stopPropagation();
+                    e.stopPropagation();
                     irParaPagina(obj, $(this).data("pagina"));
                 });
 
                 $(obj).find(".pagina-anterior").click(function (e) {
-                	e.stopPropagation();
+                    e.stopPropagation();
                     paginaAnterior(obj, $(this).data("pagina"));
                 });
 
                 $(obj).find(".pagina-proxima").click(function (e) {
-                	e.stopPropagation();
+                    e.stopPropagation();
                     proximaPagina(obj, $(this).data("pagina"));
                 });
             }
@@ -429,11 +435,11 @@
             }
 
             function sortByKey(array, key) {
-			    return array.sort(function(a, b) {
-			        var x = a[key]; var y = b[key];
-			        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-			    });
-			}
+                return array.sort(function(a, b) {
+                    var x = a[key]; var y = b[key];
+                    return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+                });
+            }
 
         })(jQuery);
 
@@ -442,11 +448,11 @@
         });
 
         function sortByKey(array, key) {
-		    return array.sort(function(a, b) {
-		        var x = a[key]; var y = b[key];
-		        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-		    });
-		}
+            return array.sort(function(a, b) {
+                var x = a[key]; var y = b[key];
+                return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+            });
+        }
 
         var tabela
         function load() {
@@ -455,8 +461,8 @@
             //$('#res').append('<div id="overlay1"><img src="../../Content/themes/base/images/ajax-loader.gif" class="loading_circle" alt="loading" /></div>');
 
             tabela = $("#tabela").Tabela({
-        		// debug: true,
-        		// itensPorPagina: 1,
+                // debug: true,
+                // itensPorPagina: 1,
                 nomeRegistros: "Poço(s)",
                 colunas: [
                     {
@@ -535,8 +541,11 @@
                             return "<input id='poco_" + i + "' class='StatusPocoSelecionado' data-index='" + i + "' val='" + i + "' type='checkbox' " + criarChecked + "/><label for='poco_" + i + "'>&nbsp</label>";
                         },
                         order: false,
-                        headerStyle: "text-align:center;display:block;",
-                        rowStyle: "text-align:center;"
+                        style: {
+                            header: "text-align:center;display:block;",
+                            cell: "text-align:center;",
+                            row: ''
+                        }
                     },
                 ],
                 onCreated: function () {
@@ -562,226 +571,226 @@
                 }
             });
 
-			// {
-			// 	NomePoco: '',
-			// 	UltimoStatusEnviado: '',
-			// 	DataUltimoStatusEnviado: '',
-			// 	StatusPoco: '',
-			// 	DataAlteracao: '',
-			// 	Comentario: '',
-			// 	Selecionado: false
-			// }
-			var resultado = [
-				{
-					NomePoco: 'TESTE 1',
-					UltimoStatusEnviado: null,
-					DataUltimoStatusEnviado: null,
-					StatusPoco: 'ALE',
-					DataAlteracao: '20/10/2017 12:00:00',
-					Comentario: 'Lorem Ipsum',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 2',
-					UltimoStatusEnviado: null,
-					DataUltimoStatusEnviado: null,
-					StatusPoco: 'PRD',
-					DataAlteracao: '05/04/2017 14:35:00',
-					Comentario: 'Lorem Ipsum dolor sit amet',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 3',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 4',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 5',
-					UltimoStatusEnviado: 'AAA',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 6',
-					UltimoStatusEnviado: 'BBB',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 7',
-					UltimoStatusEnviado: 'CCC',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZZZ',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 8',
-					UltimoStatusEnviado: null,
-					DataUltimoStatusEnviado: null,
-					StatusPoco: 'AAA',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 9',
-					UltimoStatusEnviado: null,
-					DataUltimoStatusEnviado: null,
-					StatusPoco: 'SSS',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 10',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 11',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 12',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 13',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 14',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 15',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 16',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 17',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 18',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 19',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 20',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 21',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 22',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-				{
-					NomePoco: 'TESTE 23',
-					UltimoStatusEnviado: 'END',
-					DataUltimoStatusEnviado: '21/03/2017 01:00:10',
-					StatusPoco: 'ZEL',
-					DataAlteracao: '22/03/2017 21:15:10',
-					Comentario: 'Lorem Ipsum dolor sit amet 2',
-					Selecionado: false
-				},
-			];
+            // {
+            //  NomePoco: '',
+            //  UltimoStatusEnviado: '',
+            //  DataUltimoStatusEnviado: '',
+            //  StatusPoco: '',
+            //  DataAlteracao: '',
+            //  Comentario: '',
+            //  Selecionado: false
+            // }
+            var resultado = [
+                {
+                    NomePoco: 'TESTE 1',
+                    UltimoStatusEnviado: null,
+                    DataUltimoStatusEnviado: null,
+                    StatusPoco: 'ALE',
+                    DataAlteracao: '20/10/2017 12:00:00',
+                    Comentario: 'Lorem Ipsum',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 2',
+                    UltimoStatusEnviado: null,
+                    DataUltimoStatusEnviado: null,
+                    StatusPoco: 'PRD',
+                    DataAlteracao: '05/04/2017 14:35:00',
+                    Comentario: 'Lorem Ipsum dolor sit amet',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 3',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 4',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 5',
+                    UltimoStatusEnviado: 'AAA',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 6',
+                    UltimoStatusEnviado: 'BBB',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 7',
+                    UltimoStatusEnviado: 'CCC',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZZZ',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 8',
+                    UltimoStatusEnviado: null,
+                    DataUltimoStatusEnviado: null,
+                    StatusPoco: 'AAA',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 9',
+                    UltimoStatusEnviado: null,
+                    DataUltimoStatusEnviado: null,
+                    StatusPoco: 'SSS',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 10',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 11',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 12',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 13',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 14',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 15',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 16',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 17',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 18',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 19',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 20',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 21',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 22',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+                {
+                    NomePoco: 'TESTE 23',
+                    UltimoStatusEnviado: 'END',
+                    DataUltimoStatusEnviado: '21/03/2017 01:00:10',
+                    StatusPoco: 'ZEL',
+                    DataAlteracao: '22/03/2017 21:15:10',
+                    Comentario: 'Lorem Ipsum dolor sit amet 2',
+                    Selecionado: false
+                },
+            ];
 
-			tabela.SetData(resultado);
+            tabela.SetData(resultado);
 
             //if (data.sucesso) {
             //    tabela.SetData(data.result);
